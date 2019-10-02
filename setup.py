@@ -57,7 +57,6 @@ setup(
             # or else they will not be included in the distribution on PyPI!
             # 'path/to/data_file',
         ],
-        '': ["EPICS_CA.pth"],
     },
     install_requires=requirements,
     license="BSD (3-clause)",
@@ -66,4 +65,5 @@ setup(
         'Natural Language :: English',
         'Programming Language :: Python :: 3',
     ],
+    data_files=[('lib/python2.7/site-packages',['EPICS_CA.pth'])]
 )
