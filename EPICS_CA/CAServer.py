@@ -431,12 +431,12 @@ def delete_PV(PV_name):
     """Call if PV no longer exists"""
     disconnect_PV(PV_name)
     if DEBUG: info("CAServer: deleting PV %r" % PV_name)
-    del PVs[PV_name]    
 
 def disconnect_PV(PV_name):
     """Notify subscribers that PV no longer exists."""
     if not PV_name in PVs.keys(): return
     PV = PVs[PV_name]
+    del PVs[PV_name]    
     for address in PV.subscribers.keys():
         # Notify connected clients that process variable has changed.
         subscriber = PV.subscribers[address]
