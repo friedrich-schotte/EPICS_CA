@@ -4,7 +4,7 @@ Implements the server side of the Channel Access (CA) protocol, version 4.11.
 
 Author: Friedrich Schotte
 Date created: 2009-10-31
-Date last modified: 2019-08-07
+Date last modified: 2019-10-02
 
 based on: 'Channel Access Protocol Specification', version 4.11
 http://epics.cosylab.com/cosyjava/JCA-Common/Documentation/CAproto.html
@@ -51,7 +51,7 @@ variable with three arguments:
 """
 from logging import debug,info,warn,error
 
-__version__ = "1.6.4" # CA_type 
+__version__ = "1.6.6" # Python 3 compatbility 
 
 DEBUG = False # Generate debug messages?
 
@@ -105,7 +105,7 @@ def unregister_property(object=None,property_name=None,PV_name=None):
 
 def casdel(name):
     """Undo 'casput'"""
-    for PV_name in PVs.keys():
+    for PV_name in list(PVs.keys()):
         if PV_name.startswith(name): delete_PV(PV_name)
 
 class PV(object):
@@ -825,7 +825,8 @@ def process_message(address,request):
         reply_flag = data_type
         minor_version = data_count
         channel_CID = parameter1 # client allocated ID for this transaction.
-        channel_name = payload.rstrip(b"\0")
+        channel_name = payload.rstrip(b"\0").decode("latin-1")
+        ##if DEBUG: debug("PV %r exists? %r" % (channel_name,PV_exists(channel_name)))
         if PV_exists(channel_name):
             if DEBUG: debug("SEARCH,reply_flag=%r,minor_ver=%r,channel_CID=%r,channel_name=%r\n"
                 % (reply_flag,minor_version,channel_CID,channel_name))
@@ -854,7 +855,7 @@ def process_message(address,request):
         # name. 
         channel_CID = parameter1
         minor_version = parameter2
-        channel_name = payload.rstrip(b"\0")
+        channel_name = payload.rstrip(b"\0").decode("latin-1")
         if DEBUG: debug("CREATE_CHAN channel_CID=%r, minor_version=%r" %
             (channel_CID,minor_version))
         if not PV_exists(channel_name): return
@@ -990,7 +991,7 @@ def object_name(object):
     else: return repr(object)
 
 def message(command=0,payload_size=0,data_type=0,data_count=0,
-        parameter1=0,parameter2=0,payload=""):
+        parameter1=0,parameter2=0,payload=b""):
     """Assemble a Channel Access message datagram for network transmission"""
     if type(command) == str: command = commands[command]
     assert data_type is not None
@@ -1481,21 +1482,18 @@ if __name__ == "__main__": # for testing
     logfile = gettempdir()+"/CAServer.log"
     logging.basicConfig(
         level=logging.DEBUG,
-        format="%(asctime)s: %(levelname)s %(message)s",
+        format="%(asctime)s: %(levelname)s %(module)s %(message)s",
         ##filename=logfile,
     )
     DEBUG = True
 
-    from numpy import nan,array
-    print('CA_type(array([0.]))')
-    print('CA_equal([False,True],[0,1])')
-    print('')
-    PV_name = "TEST:TEST.VAL"
-    print('casput(PV_name,[],update=False)')
-    print('casput(PV_name,[0],update=False)')
-    print('casput(PV_name,[0.0],update=False)')
-    print('casput(PV_name,nan,update=False)')
-    print('casget(PV_name)')
-    from CA import caget,camonitor
-    print('caget(%r)' % PV_name)
-    print('camonitor(%r)' % PV_name)
+    """Check that casput and caget work together"""
+    PV_name = "TEST:TEST.VAL" 
+    casput(PV_name,1)
+    import CA
+    CA.DEBUG = True
+    from CA import caget
+    v = caget(PV_name,timeout=2)
+    info("%s=%r" % (PV_name,v))
+    DEBUG = False
+

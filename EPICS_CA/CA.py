@@ -19,7 +19,7 @@ https://github.io/python_ca
 
 Author: Friedrich Schotte
 Date created: 2009-04-26
-Date last modified: 2019-08-17
+Date last modified: 2019-10-02
 Python Version: 2.7 and 3.7
 
 Based on: 'Channel Access Protocol Specification', version 4.11
@@ -32,7 +32,7 @@ To do:
   (EPICS R3.12 Channel Access Reference Manual,
   Chapter 1.3.2 Configuring CA for Multiple Subnets)
 """
-__version__ = "3.3.5" # network_data generates bytes 
+__version__ = "3.3.6" # Python 3 compatibility 
 
 __authors__ = ["Friedrich Schotte"]
 __credits__ = []
@@ -154,7 +154,7 @@ commands = {
 def command_name(command_code):
     """'VERSION', 'EVENT_ADD',.... """
     if not command_code in commands.values(): return str(command_code)
-    return commands.keys()[commands.values().index(command_code)]
+    return list(commands.keys())[list(commands.values()).index(command_code)]
 
 VERSION = 0
 EVENT_ADD = 1
@@ -1014,12 +1014,10 @@ def message_info(message):
     command,payload_size,data_type,data_count,parameter1,parameter2 = \
         unpack(">HHHHII",header)
     s = str(command)
-    if command in commands.values():
-        s += "("+commands.keys()[commands.values().index(command)]+")"
+    if command in commands.values(): s += "("+command_name(command)+")"
     s += ","+str(payload_size)
     s += ","+str(data_type)
-    if data_type in types.values():
-        s += "("+types.keys()[types.values().index(data_type)]+")"
+    if data_type in types.values(): s += "("+type_name(data_type)+")" 
     s += ","+str(data_count)
     s += ", %r, %r" % (parameter1,parameter2)
     if payload:
