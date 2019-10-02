@@ -65,6 +65,6 @@ setup(
         'Natural Language :: English',
         'Programming Language :: Python :: 3',
     ],
-    extra_path="EPICS_CA/EPICS_CA",
+    ##extra_path="EPICS_CA/EPICS_CA",
     ##data_files=[('lib/python2.7/site-packages',['EPICS_CA.pth'])],
 )
