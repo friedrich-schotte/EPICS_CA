@@ -57,6 +57,7 @@ setup(
             # or else they will not be included in the distribution on PyPI!
             # 'path/to/data_file',
         ]
+        '': ["EPICS_CA.pth"],
     },
     install_requires=requirements,
     license="BSD (3-clause)",
@@ -65,5 +66,4 @@ setup(
         'Natural Language :: English',
         'Programming Language :: Python :: 3',
     ],
-    extra_path="EPICS_CA",
 )
