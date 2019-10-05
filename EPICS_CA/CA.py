@@ -19,7 +19,7 @@ https://github.io/python_ca
 
 Author: Friedrich Schotte
 Date created: 2009-04-26
-Date last modified: 2019-10-02
+Date last modified: 2019-10-04
 Python Version: 2.7 and 3.7
 
 Based on: 'Channel Access Protocol Specification', version 4.11
@@ -32,7 +32,7 @@ To do:
   (EPICS R3.12 Channel Access Reference Manual,
   Chapter 1.3.2 Configuring CA for Multiple Subnets)
 """
-__version__ = "3.3.6"  # Python 3 compatibility
+__version__ = "3.3.7"  # camonitor_background in caget
 
 __authors__ = ["Friedrich Schotte"]
 __credits__ = []
@@ -375,7 +375,6 @@ def caget(PV_name, timeout=None, wait=None):
     if wait == False:
         timeout = 0
 
-    camonitor_background()
     if not PV_name in PVs:
         PVs[PV_name] = PV_info()
         if timeout > 0:
@@ -385,6 +384,8 @@ def caget(PV_name, timeout=None, wait=None):
     pv = PVs[PV_name]
     while pv.data is None and time() - pv.connection_requested < timeout:
         process_replies()
+
+    camonitor_background()
 
     v = value(pv.data_type, pv.data_count, pv.data) if pv.data else None
 

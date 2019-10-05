@@ -20,7 +20,6 @@ def test_disconnect():
     assert casget(PV_name) == 1
     assert caget(PV_name) == 1
     casdel(PV_name)
-    sleep(5)
     assert casget(PV_name) is None
-    sleep(0.1)
+    sleep(0.01)
     assert caget(PV_name) is None

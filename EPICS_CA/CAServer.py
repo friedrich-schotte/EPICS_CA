@@ -4,7 +4,7 @@ Implements the server side of the Channel Access (CA) protocol, version 4.11.
 
 Author: Friedrich Schotte
 Date created: 2009-10-31
-Date last modified: 2019-10-02
+Date last modified: 2019-10-04
 
 based on: 'Channel Access Protocol Specification', version 4.11
 http://epics.cosylab.com/cosyjava/JCA-Common/Documentation/CAproto.html
@@ -51,19 +51,19 @@ variable with three arguments:
 """
 from logging import debug, info, warn, error
 
-__version__ = "1.6.6"  # Python 3 compatbility
+__version__ = "1.7" # registered_objects(), unregister_object disconnects PVs 
 
 DEBUG = False  # Generate debug messages?
 
-registered_objects = []
+registered_object_list = []
 
 
 def register_object(object, name=""):
     """Export object as PV under the given name"""
-    global registered_objects
+    global registered_object_list
     start_server()
     unregister_object(name=name)
-    registered_objects += [(object, name)]
+    registered_object_list += [(object, name)]
 
 
 casregister = CAServer_register = register_object  # alias names
@@ -71,9 +71,9 @@ casregister = CAServer_register = register_object  # alias names
 
 def unregister_object(object=None, name=None):
     """Undo 'register_object'"""
-    global registered_objects
+    global registered_object_list
     if name is None:
-        for (o, n) in registered_objects:
+        for (o, n) in registered_object_list:
             if o is object:
                 name = n
     if name is not None:
@@ -81,11 +81,21 @@ def unregister_object(object=None, name=None):
             if PV_name.startswith(name):
                 delete_PV(PV_name)
     if object is not None:
-        registered_objects = [
-            (o, n) for (o, n) in registered_objects if not o is object
+        for (o,n) in registered_object_list:
+            if o is object: name = n
+            for PV_name in list(PVs.keys()):
+                if PV_name.startswith(name):
+                    delete_PV(PV_name)
+        registered_object_list = [
+            (o, n) for (o, n) in registered_object_list if not o is object
         ]
     if name is not None:
-        registered_objects = [(o, n) for (o, n) in registered_objects if not n == name]
+        registered_object_list = [(o, n) for (o, n) in registered_object_list if not n == name]
+
+
+def registered_objects():
+    """List of Python object instances"""
+    return [object for (object,name) in registered_object_list]
 
 
 registered_properties = {}
@@ -316,7 +326,7 @@ def PV_current_value(PV_name):
 def PV_value_or_object(PV_name):
     """The current value of a process variable as Python data type.
     If the process variable has not been define return None."""
-    for object, name in registered_objects:
+    for object, name in registered_object_list:
         if PV_name.startswith(name):
             attribute = PV_name[len(name) :]
             ##try: return eval("object"+attribute+".value")
@@ -368,7 +378,7 @@ def PV_set_value(PV_name, value, keep_type=True):
         debug("set %s = %r" % (PV_name, value))
     if keep_type:
         value = convert(PV_name, value)
-    for object, name in registered_objects:
+    for object, name in registered_object_list:
         if PV_name.startswith(name + "."):
             attribute = PV_name[len(name + ".") :]
             PV_object_name = "object." + attribute
@@ -550,9 +560,10 @@ def notify_subscribers_of_value(PV_name, value):
 
 def delete_PV(PV_name):
     """Call if PV no longer exists"""
-    disconnect_PV(PV_name)
     if DEBUG:
         info("CAServer: deleting PV %r" % PV_name)
+    if PV_name in cache: del cache[PV_name]
+    disconnect_PV(PV_name)
 
 
 def disconnect_PV(PV_name):
