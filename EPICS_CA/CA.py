@@ -32,7 +32,7 @@ To do:
   (EPICS R3.12 Channel Access Reference Manual,
   Chapter 1.3.2 Configuring CA for Multiple Subnets)
 """
-__version__ = "3.3.7"  # camonitor_background in caget
+__version__ = "3.4"  # using EPICS_CA_ADDR_LIST environment variable
 
 __authors__ = ["Friedrich Schotte"]
 __credits__ = []
@@ -1698,12 +1698,9 @@ def broadcast_addresses():
     addresses = []
     from os import environ
 
-    if (
-        "EPICS_CA_AUTO_ADDR_LIST" in environ
-        and environ["EPICS_CA_AUTO_ADDR_LIST"] == "NO"
-    ):
-        pass
-    else:
+    addresses += environ.get("EPICS_CA_ADDR_LIST","").split()
+
+    if environ.get("EPICS_CA_AUTO_ADDR_LIST","").lower() != "no":
         try:
             addresses += broadcast_addresses_psutil()
         except ImportError:
@@ -1980,7 +1977,20 @@ if __name__ == "__main__":  # for testing
     DEBUG = False
     print("DEBUG = %r" % DEBUG)
 
-    ##PV_name = "NIH:ENSEMBLE.homed"
-    PV_name = "NIH:SYRINGE1.VAL"
+    from os import environ
+    print('environ["EPICS_CA_AUTO_ADDR_LIST"] = %r' % environ.get("EPICS_CA_AUTO_ADDR_LIST",""))
+    print('environ["EPICS_CA_ADDR_LIST"] = %r' % environ.get("EPICS_CA_ADDR_LIST",""))
+    print('environ["EPICS_CA_AUTO_ADDR_LIST"] = "no"')
+    print('environ["EPICS_CA_ADDR_LIST"] = "128.231.5.255"')
+    print('environ["EPICS_CA_ADDR_LIST"] = "128.231.5.170 128.231.5.70 128.231.5.163 128.231.5.169 128.231.5.82 128.231.5.84"')
+    print('environ["EPICS_CA_ADDR_LIST"] = "128.231.5.51"')
+    print('environ["EPICS_CA_ADDR_LIST"] = "10.191.98.142"')
+    print('broadcast_addresses()')
+
+    PV_name = "TEST:TEST.VAL"
+    from CAServer import casput
+    print("casput(%r,1)" % PV_name)
     print("cainfo(%r)" % PV_name)
-    print("caput(%r,0.0)" % PV_name)
+    ##print("caput(%r,0.0)" % PV_name)
+
+
