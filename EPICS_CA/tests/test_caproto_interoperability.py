@@ -4,19 +4,18 @@ except ValueError: import CA
 caget = CA.caget
 caput = CA.caput
 
-try: import caproto
+caproto_installed = False
+try: import caproto.server
 except ImportError:
     from pip._internal.main import main as pip
     pip(['install','caproto'])
-
-caproto_installed = False
-from threading import Thread
-server = Thread()
-
 try:
-    import caproto
+    import caproto.server
     caproto_installed = True
 except ImportError: pass
+
+from threading import Thread
+server = Thread()
 
 if caproto_installed:        
     
