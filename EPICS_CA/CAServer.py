@@ -4,7 +4,7 @@ Implements the server side of the Channel Access (CA) protocol, version 4.11.
 
 Author: Friedrich Schotte
 Date created: 2009-10-31
-Date last modified: 2019-10-04
+Date last modified: 2019-11-06
 
 based on: 'Channel Access Protocol Specification', version 4.11
 http://epics.cosylab.com/cosyjava/JCA-Common/Documentation/CAproto.html
@@ -49,9 +49,9 @@ variable with three arguments:
 - the new value
 - the new value as string
 """
-from logging import debug, info, warn, error
+from logging import debug, info, warning, error
 
-__version__ = "1.7" # registered_objects(), unregister_object disconnects PVs 
+__version__ = "1.7.2" # "string_type" no longer required 
 
 DEBUG = False  # Generate debug messages?
 
@@ -77,13 +77,13 @@ def unregister_object(object=None, name=None):
             if o is object:
                 name = n
     if name is not None:
-        for PV_name in PVs.keys():
+        for PV_name in list(PVs):
             if PV_name.startswith(name):
                 delete_PV(PV_name)
     if object is not None:
         for (o,n) in registered_object_list:
             if o is object: name = n
-            for PV_name in list(PVs.keys()):
+            for PV_name in list(PVs):
                 if PV_name.startswith(name):
                     delete_PV(PV_name)
         registered_object_list = [
@@ -120,14 +120,14 @@ def unregister_property(object=None, property_name=None, PV_name=None):
         if PV_name in registered_properties:
             del registered_properties[PV_name]
     elif object is not None and property_name is not None:
-        for key in registered_properties.keys():
+        for key in list(registered_properties):
             if registered_properties[key] == (object, property_name):
                 del registered_properties[key]
 
 
 def casdel(name):
     """Undo 'casput'"""
-    for PV_name in list(PVs.keys()):
+    for PV_name in list(PVs):
         if PV_name.startswith(name):
             delete_PV(PV_name)
 
@@ -182,7 +182,7 @@ def casput(PV_name, value, update=True):
     if DEBUG:
         debug("casput(%r,%r)" % (PV_name, value))
     start_server()
-    if not PV_name in PVs.keys():
+    if not PV_name in PVs:
         PVs[PV_name] = PV_info()
     PV = PVs[PV_name]
     if not CA_equal(PV_value(PV_name), value) or update:
@@ -213,7 +213,7 @@ def casmonitor(PV_name, writer=None, callback=None):
     def callback(pvname,value,char_value): print pvname,value,char_value
     """
     start_server()
-    if not PV_name in PVs.keys():
+    if not PV_name in PVs:
         PVs[PV_name] = PV_info()
     PV = PVs[PV_name]
     if callback is None and writer is None:
@@ -290,7 +290,7 @@ class cache_entry:
 
 def PV_exists(PV_name):
     """Has a process variable with the given name been defined?"""
-    ##return PV_name in PVs.keys() or PV_value(PV_name) is not None
+    ##return PV_name in PVs or PV_value(PV_name) is not None
     return PV_value(PV_name) is not None
 
 
@@ -344,7 +344,7 @@ def PV_value_or_object(PV_name):
     record = object_instance(PV_name)
     if record:
         return getattr(record, object_property(PV_name))
-    if PV_name in PVs.keys():
+    if PV_name in PVs:
         return PVs[PV_name].value
     return None
 
@@ -435,7 +435,7 @@ def PV_set_value(PV_name, value, keep_type=True):
     record = object_instance(PV_name)
     if record:
         setattr(record, object_property(PV_name), value)
-    if not PV_name in PVs.keys():
+    if not PV_name in PVs:
         PVs[PV_name] = PV_info()
     PV = PVs[PV_name]
     PV.value = value
@@ -448,7 +448,7 @@ def PV_set_value(PV_name, value, keep_type=True):
 
 def call_callbacks(PV_name):
     """Call any callback routines for this PV."""
-    if not PV_name in PVs.keys():
+    if not PV_name in PVs:
         return
     PV = PVs[PV_name]
     if len(PV.callbacks) > 0:
@@ -485,7 +485,7 @@ def call_callbacks(PV_name):
 def PV_subscribers(PV_name):
     """IP address/ports of clients are connected to a process variable.
     Return value: list of (string,integer) tuples"""
-    if not PV_name in PVs.keys():
+    if not PV_name in PVs:
         return []
     PV = PVs[PV_name]
     return PV.subscribers.keys()
@@ -504,7 +504,7 @@ def PV_connected(PV_name):
 def notify_subscribers_if_changed(PV_name, value):
     """Send update events to all client monitoring the given process variable
     if the new value is different than the current value"""
-    if not PV_name in PVs.keys():
+    if not PV_name in PVs:
         return
     PV = PVs[PV_name]
     if value is None:
@@ -526,9 +526,9 @@ def notify_subscribers(PV_name):
 
 def notify_subscribers_of_value(PV_name, value):
     """Send update events to all client monitoring the given process variable"""
-    if PV_name in PVs.keys() and value is not None:
+    if PV_name in PVs and value is not None:
         PV = PVs[PV_name]
-        for address in PV.subscribers.keys():
+        for address in list(PV.subscribers):
             if not address in PV.subscribers:
                 continue
             # Notify connected clients that process variable has changed.
@@ -568,11 +568,11 @@ def delete_PV(PV_name):
 
 def disconnect_PV(PV_name):
     """Notify subscribers that PV no longer exists."""
-    if not PV_name in PVs.keys():
+    if not PV_name in PVs:
         return
     PV = PVs[PV_name]
     del PVs[PV_name]
-    for address in PV.subscribers.keys():
+    for address in list(PV.subscribers):
         # Notify connected clients that process variable has changed.
         subscriber = PV.subscribers[address]
         # Make sure client is interested in receiving update notifications.
@@ -620,7 +620,7 @@ def PV_names():
 def connected_PVs():
     """All currently active process variables, with clients connected to them.
     Return value: ist of strings"""
-    return [PV_name for PV_name in PVs.keys() if PV_connected(PV_name)]
+    return [PV_name for PV_name in list(PVs) if PV_connected(PV_name)]
 
 
 def update_all_PVs():
@@ -703,12 +703,12 @@ commands = {
     "SERVER_DISCONN": 27,
 }
 
+command_names = {v: k for k, v in commands.items()}
 
 def command_name(command_code):
     """'VERSION', 'EVENT_ADD',.... """
-    if not command_code in commands.values():
-        return str(command_code)
-    return list(commands.keys())[list(commands.values()).index(command_code)]
+    if not command_code in command_names: return str(command_code)
+    return command_names[command_code]
 
 
 # CA Payload Data Types:
@@ -751,12 +751,12 @@ types = {
     "CTRL_DOUBLE": 34,
 }
 
+type_names = {v: k for k, v in types.items()}
 
 def type_name(data_type):
     """Channel Access data type as string. data_type: integer number"""
-    if not data_type in types.values():
-        return str(data_type)
-    return list(types.keys())[list(types.values()).index(data_type)]
+    if not data_type in type_names: return str(data_type)
+    return type_names[data_type]
 
 
 # Return status codes
@@ -884,11 +884,11 @@ def start_server():
     task.daemon = True
     task.start()
 
-
-try:
-    import socketserver
-except ImportError:
-    import SocketServer as socketserver
+import socketserver
+##try:
+##    import socketserver
+##except ImportError:
+##    import SocketServer as socketserver
 
 
 class UDPServer(socketserver.UDPServer, socketserver.ThreadingMixIn):
@@ -1089,7 +1089,7 @@ def process_message(address, request):
             )
         if not PV_exists(channel_name):
             return
-        if not channel_name in PVs.keys():
+        if not channel_name in PVs:
             PVs[channel_name] = PV_info()
         PV = PVs[channel_name]
         val = PV_value(channel_name)
@@ -1117,7 +1117,7 @@ def process_message(address, request):
                 "READ_NOTIFY data_type=%r,data_count=%r,channel_SID=%r,IOID=%r"
                 % (data_type, data_count, channel_SID, IOID)
             )
-        for PV_name in PVs.keys():
+        for PV_name in list(PVs):
             PV = PVs[PV_name]
             if PV.channel_SID == channel_SID:
                 status_code = 1  # Normal successful completion
@@ -1149,7 +1149,7 @@ def process_message(address, request):
                     mask,
                 )
             )
-        for PV_name in PVs.keys():
+        for PV_name in list(PVs):
             PV = PVs[PV_name]
             if PV.channel_SID == channel_SID:
                 PV.subscribers[address] = subscriber_info(
@@ -1182,7 +1182,7 @@ def process_message(address, request):
                 "IOID=%r, value=%r\n"
                 % (data_type, data_count, channel_SID, IOID, new_value)
             )
-        for PV_name in PVs.keys():
+        for PV_name in list(PVs):
             PV = PVs[PV_name]
             if PV.channel_SID == channel_SID:
                 if DEBUG:
@@ -1214,7 +1214,7 @@ def process_message(address, request):
                 "IOID=%r, value=%r\n"
                 % (data_type, data_count, channel_SID, IOID, new_value)
             )
-        for PV_name in PVs.keys():
+        for PV_name in list(PVs):
             PV = PVs[PV_name]
             if PV.channel_SID == channel_SID:
                 if DEBUG:
@@ -1235,7 +1235,7 @@ def process_message(address, request):
                 "channel_SID:%r,subscription_ID:%r},"
                 % (type_name(data_type), data_count, channel_SID, subscription_ID)
             )
-        for PV_name in PVs.keys():
+        for PV_name in list(PVs):
             PV = PVs[PV_name]
             if PV.channel_SID == channel_SID:
                 if (
@@ -1325,7 +1325,7 @@ def message_info(message):
     s += "," + str(payload_size)
     s += "," + str(data_type)
     if data_type in types.values():
-        s += "(" + list(types.keys())[list(types.values()).index(data_type)] + ")"
+        s += "(" + type_name(data_type) + ")"
     s += "," + str(data_count)
     s += ", %r, %r" % (parameter1, parameter2)
     if payload:
@@ -1919,9 +1919,7 @@ def CA_equal(a, b):
 
 
 def isstring(s):
-    from six import string_types
-
-    return isinstance(s, string_types)
+    return isinstance(value,(str,type(u'')))
 
 
 def logfile():

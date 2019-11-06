@@ -19,7 +19,7 @@ https://github.io/python_ca
 
 Author: Friedrich Schotte
 Date created: 2009-04-26
-Date last modified: 2019-10-04
+Date last modified: 2019-11-06
 Python Version: 2.7 and 3.7
 
 Based on: 'Channel Access Protocol Specification', version 4.11
@@ -32,7 +32,7 @@ To do:
   (EPICS R3.12 Channel Access Reference Manual,
   Chapter 1.3.2 Configuring CA for Multiple Subnets)
 """
-__version__ = "3.4"  # using EPICS_CA_ADDR_LIST environment variable
+__version__ = "3.4.1"# "string_type" no longer required
 
 __authors__ = ["Friedrich Schotte"]
 __credits__ = []
@@ -1683,9 +1683,7 @@ def tobytes(v):
 
 def isarray(value):
     """Is the value a container, like tuple, list or numpy array?"""
-    from six import string_types
-
-    if isinstance(value, string_types):
+    if isinstance(value,(str,type(u''))):
         return False
     if hasattr(value, "__len__"):
         return True
