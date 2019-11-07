@@ -884,12 +884,10 @@ def start_server():
     task.daemon = True
     task.start()
 
-import socketserver
-##try:
-##    import socketserver
-##except ImportError:
-##    import SocketServer as socketserver
-
+try:
+    import socketserver
+except ImportError:
+    import SocketServer as socketserver
 
 class UDPServer(socketserver.UDPServer, socketserver.ThreadingMixIn):
     """UPD server with customized socket options"""
