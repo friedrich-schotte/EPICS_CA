@@ -4,7 +4,7 @@ Implements the server side of the Channel Access (CA) protocol, version 4.11.
 
 Author: Friedrich Schotte
 Date created: 2009-10-31
-Date last modified: 2019-11-06
+Date last modified: 2019-11-08
 
 based on: 'Channel Access Protocol Specification', version 4.11
 http://epics.cosylab.com/cosyjava/JCA-Common/Documentation/CAproto.html
@@ -51,7 +51,7 @@ variable with three arguments:
 """
 from logging import debug, info, warning, error
 
-__version__ = "1.7.2" # "string_type" no longer required 
+__version__ = "1.7.4" # bug fix: isstring
 
 DEBUG = False  # Generate debug messages?
 
@@ -1296,6 +1296,14 @@ def message(
     while len(payload) < payload_size:
         payload += b"\0"
 
+    # Truncate oversized payloads
+    max_payload_size = 2**16-8
+    if payload_size > max_payload_size:
+        warning("Truncating oversized payload of %s bytes (max allowed %d)"
+            % (payload_size,max_payload_size))
+        payload_size = max_payload_size
+    payload = payload[0:payload_size]
+
     # 16-byte header consisting of four 16-bit integers
     # and two 32-bit integers in big-edian byte order.
     header = pack(
@@ -1873,6 +1881,10 @@ def isarray(value):
         return False
 
 
+def isstring(value):
+    return isinstance(value,(type(''),type(u''),type(b'')))
+
+
 def isint(value):
     return isinstance(value, int)
 
@@ -1914,10 +1926,6 @@ def CA_equal(a, b):
     B = CA_type(b), CA_count(b), CA_binary_data(b)
     equal = A == B
     return equal
-
-
-def isstring(s):
-    return isinstance(value,(str,type(u'')))
 
 
 def logfile():

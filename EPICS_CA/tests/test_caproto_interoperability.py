@@ -61,17 +61,21 @@ if caproto_installed:
 ##CA.timeout = 5
 from time import sleep
 
-def test_str():
-    if server.is_alive():
-        assert caget('TEST:TEST.STRVAL',timeout=5) == 'test'
-        caput('TEST:TEST.STRVAL','new_value',wait=True,timeout=5)
+if server.is_alive():
+    def test_str():
+        value = caget('TEST:TEST.STRVAL',timeout=5)
+        ##assert value == ioc.STRVAL.value
+        value += "."
+        caput('TEST:TEST.STRVAL',value,wait=True,timeout=5)
         sleep(0.5)
-        assert caget('TEST:TEST.STRVAL',timeout=5) == 'new_value'
+        assert caget('TEST:TEST.STRVAL',timeout=5) == value
+        ##assert value == ioc.STRVAL.value
 
-def test_int():
-    if server.is_alive():
-        assert caget('TEST:TEST.INTVAL',timeout=5) == 1
-        caput('TEST:TEST.INTVAL',2,wait=True,timeout=5)
+    def test_int():
+        value = caget('TEST:TEST.INTVAL',timeout=5)
+        ##assert value == ioc.INTVAL.value
+        value += 1
+        caput('TEST:TEST.INTVAL',value,wait=True,timeout=5)
         sleep(0.5)
-        assert caget('TEST:TEST.INTVAL',timeout=5) == 2
-
+        assert caget('TEST:TEST.INTVAL',timeout=5) == value
+        ##assert value == ioc.INTVAL.value

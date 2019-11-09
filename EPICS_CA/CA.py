@@ -1682,13 +1682,17 @@ def tobytes(v):
 
 
 def isarray(value):
-    """Is the value a container, like tuple, list or numpy array?"""
-    if isinstance(value,(str,type(u''))):
+    "Is the value a container, like tuple, list or numpy array?"
+    if isstring(value):
         return False
     if hasattr(value, "__len__"):
         return True
     else:
         return False
+
+
+def isstring(value):
+    return isinstance(value,(type(''),type(u''),type(b'')))
 
 
 def broadcast_addresses():
